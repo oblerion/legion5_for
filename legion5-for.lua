@@ -1,21 +1,89 @@
   local lg5 = {
-    version = "day 2",
-    screen_w = 960,
-    screen_h = 720,
-    scene = 0,
+    version     = "day 3",
+    screen_w    = 960,
+    screen_h    = 720,
+    scene       = 0,
 
-    lmap = {},
-    id_ship = -1,--rsave_numb(0)
-    pos_ship_map = {x=0,y=0},
-    rot_ship_map = 0,
-    map_cursor={x=10,y=10,w=16,h=16}
+    map_cursor  = {
+      x=10,
+      y=10,
+      w=16,
+      h=16
+    },
+    lmap        = {},
+    lbullets    = {},
+    lenemies    = {},
+    
+    camera={x=0,y=0},
+    
+    bullet_spr={
+      Etype1    = 48,
+      Etype2    = 49,
+      Etype3    = 50,
+      Etype4    = 51,
+      Etype5    = 52,
+      ship1     = 53,
+      ship2     = 54,
+      ship3     = 55
+    },
+    
+    ship_id     = -1,--rsave_numb(0)
+    ship_pos    = {x=0,y=0},
+    ship_rot    = 0,
+    
+    ships_spr={
+      fox1      = 0,
+      fox2      = 1,
+      fox3      = 2,
+      flow1     = 3,
+      flow2     = 4,
+      flow3     = 5,
+      spic1     = 6,
+      spic2     = 7,
+      spic3     = 8
+    },
+    
+    enemies_spr={
+      tuto1     = 17,
+      low1      = 19,
+      low2      = 20,
+      midd1     = 21,
+      midd2     = 22,
+      hight1    = 24,
+      hight2    = 25,
+      nightm1   = 27,
+      nightm2   = 28
+    },
+    
+    portals_spr={
+      tutorial  = 16,
+      low       = 18,
+      midd      = 21,
+      hight     = 24,
+      nightmare = 27
+    },
+    
+    portals_id={
+      tutorial  = 25,
+      low       = 24,
+      midd      = 3,
+      hight     = 5,
+      nightmare = 31
+    },
+    
+    powup_spr={
+      upgrade   = 32,
+      heal      = 33,
+      datajump  = 34,
+      ammo      = 35
+    }
   }
 function _PlayerMove(lg5,px,py)
-  lg5.pos_ship_map.x = lg5.pos_ship_map.x + px
-  lg5.pos_ship_map.y = lg5.pos_ship_map.y + py
+  lg5.ship_pos.x = lg5.ship_pos.x + px
+  lg5.ship_pos.y = lg5.ship_pos.y + py
 end
 function _PlayerRot(lg5,rot)
-  lg5.rot_ship_map=rot
+  lg5.ship_rot=rot
 end
 function _MapInit(lg5,pw,ph)
   lg5.lmap = {w=pw,h=ph,l={},tile=30}
@@ -31,17 +99,17 @@ end
 function _MapGet(lg5,x,y)
   return lg5.lmap.l[y*lg5.lmap.w+x]
 end
-function _PortalIdToSpr(id)
-  if id==25 then
-    return 16 
-  elseif id==24 then
-    return 18
-  elseif id==3 then
-    return 21
-  elseif id==5 then
-    return 24
-  elseif id==31 then
-    return 27
+function _PortalIdToSpr(lg5,id)
+  if id==lg5.portals_id.tutorial then
+    return lg5.portals_spr.tutorial 
+  elseif id==lg5.portals_id.low then
+    return lg5.portals_spr.low
+  elseif id==lg5.portals_id.midd then
+    return lg5.portals_spr.midd
+  elseif id==lg5.portals_id.hight then
+    return lg5.portals_spr.hight
+  elseif id==lg5.portals_id.nightmare then
+    return lg5.portlals_spr.nightmare
   end
   return 16
 end
@@ -66,7 +134,7 @@ function _MapDraw(lg5,px,py,isgrid,scale)
         if lisgrid==true then 
           rectb(px+x*lg5.lmap.tile,py+y*lg5.lmap.tile,lg5.lmap.tile,lg5.lmap.tile,1) 
         end
-        spr(_PortalIdToSpr(v),
+        spr(_PortalIdToSpr(lg5,v),
           px+x*lg5.lmap.tile+8*lscale,
           py+y*lg5.lmap.tile+8*lscale,lscale,0)
         --rect(7+px+x*lg5.lmap.tile,7+py+y*lg5.lmap.tile,lg5.lmap.tile-14,lg5.lmap.tile-14,v)
@@ -83,42 +151,42 @@ function _MapDrawPlayer(lg5,px,py,scale,rot)
   if rot~=nil then
     lrot = rot
   end
-  spr(lg5.id_ship*3,
-    px+lg5.pos_ship_map.x*lg5.lmap.tile+8*lscale,
-    py+lg5.pos_ship_map.y*lg5.lmap.tile+8*lscale,lscale,lrot)
+  spr(lg5.ship_id*3,
+    px+lg5.ship_pos.x*lg5.lmap.tile+8*lscale,
+    py+lg5.ship_pos.y*lg5.lmap.tile+8*lscale,lscale,lrot)
 end
-function _GetSignalId(tag)
+function _GetSignalId(lg5,tag)
   local ri = -1
   if tag=="tutorial" then
-    ri=25
+    ri=lg5.portals_id.tutorial
   elseif tag=="low" then
-    ri=24
+    ri=lg5.portals_id.low
   elseif tag=="midd" then
-    ri=3
+    ri=lg5.portals_id.midd
   elseif tag=="hight" then
-    ri=5
+    ri=lg5.portals_id.hight
   elseif tag=="nightmare" then
-    ri=31
+    ri=lg5.portals_id.nightmare
   end
   return ri
 end
-function _SignalIdToTag(id)
-  if id==25 then
+function _SignalIdToTag(lg5,id)
+  if id==lg5.portals_id.tutorial then
     return "tutorial"  
-  elseif id==24 then
+  elseif id==lg5.portals_id.low then
     return "low"
-  elseif id==3 then
+  elseif id==lg5.portals_id.midd then
     return "midd"
-  elseif id==5 then
+  elseif id==lg5.portals_id.hight then
     return "hight"
-  elseif id==31 then
+  elseif id==lg5.portals_id.nightmare then
     return "nightmare"
   end
   return "unknow"
 end
 
 function _MapSetsignal(lg5,x,y,tag)
-  local sid = _GetSignalId(tag)
+  local sid = _GetSignalId(lg5,tag)
   _MapSet(lg5,x,y,sid)
 end
 function _MapGetsignal(lg5,x,y)
@@ -189,8 +257,8 @@ end
 function _Rdm_Player_Pos(lg5)
   local rdmx = math.random(0,lg5.lmap.w-6)
   local rdmy = math.random(0,lg5.lmap.h)
-  lg5.pos_ship_map.x = rdmx
-  lg5.pos_ship_map.y = rdmy
+  lg5.ship_pos.x = rdmx
+  lg5.ship_pos.y = rdmy
 end
 function _Rdm_Signal_Pos(lg5,tag,distmin,distmax)
   local rdmx=0
@@ -200,12 +268,45 @@ function _Rdm_Signal_Pos(lg5,tag,distmin,distmax)
   rdmx = math.random(1,lg5.lmap.w-1)
   rdmy = math.random(1,lg5.lmap.h-1)
   lid = _MapGet(lg5,rdmx,rdmy)
-  cdist = math.abs(rdmx-lg5.pos_ship_map.x)+math.abs(rdmy-lg5.pos_ship_map.y)
+  cdist = math.abs(rdmx-lg5.ship_pos.x)+math.abs(rdmy-lg5.ship_pos.y)
   if lid==-1 and cdist>=distmin and cdist<distmax then
     _MapSetsignal(lg5,rdmx,rdmy,tag)
   else
     _Rdm_Signal_Pos(lg5,tag,distmin,distmax)
     return 0
+  end
+end
+
+function _NewEnemy(lg5,pid,px,py)
+  local mapid = _MapGet(lg5,px,py)
+  if mapid==-1 then
+    local e = {id=pid,x=px,y=py,rot=0}
+    table.insert(lg5.lenemies,e)
+  end
+end
+
+function _EnnemyDraw(lg5,xmap,ymap,scalemap)
+  for _,v in pairs(lg5.lenemies)do
+    spr(v.id,xmap+v.x*lg5.lmap.tile+8*scalemap,ymap+v.y*lg5.lmap.tile+8*scalemap,scalemap,v.rot)
+  end
+end
+
+function _CameraUpdate(lg5,lscale)
+  lg5.camera.x=0-(lg5.ship_pos.x-5)*16*lscale
+  lg5.camera.y=0-(lg5.ship_pos.y-4)*16*lscale
+end
+
+function _NewBullet(lg5,pid,px,py,prot)
+  local mapid = _MapGet(lg5,px,py)
+  if mapid==-1 then
+    local b = {id=pid,x=px,y=py,rot=prot}
+    table.insert(lg5.lbullets,b)
+  end
+end
+
+function _BulletDraw(lg5,xmap,ymap,scalemap)
+  for _,v in pairs(lg5.lenemies)do
+    spr(v.id,xmap+v.x*lg5.lmap.tile+8*scalemap,ymap+v.y*lg5.lmap.tile+8*scalemap,scalemap,v.rot)
   end
 end
 
@@ -215,28 +316,28 @@ function lg5:scene_title()
   text("Legion5 : fox on the run",(lg5.screen_w/2)-260,30+(lg5.screen_h/4),1,45)
   text("press up",(lg5.screen_w/2)-45,500,1,25)
 
-  spr(lg5.id_ship*3,(lg5.screen_w/2),330,8,0)
+  spr(lg5.ship_id*3,(lg5.screen_w/2),330,8,0)
 
   text("powered by egba engine",730,690,1,18)
   text("ver "..lg5.version.." by magnus oblerion",20,690,1,18)
 
   if btnp(2) then
-    if lg5.id_ship == 0 then
-      lg5.id_ship=2
+    if lg5.ship_id == 0 then
+      lg5.ship_id=2
     else
-      lg5.id_ship = lg5.id_ship-1
+      lg5.ship_id = lg5.ship_id-1
     end
   end
   if btnp(3) then
-    if self.id_ship == 2 then
-      self.id_ship=0
+    if self.ship_id == 2 then
+      self.ship_id=0
     else
-      self.id_ship = self.id_ship+1
+      self.ship_id = self.ship_id+1
     end
   end
 
   if	btnp(0) then
-    wsave_numb(0,self.id_ship)
+    wsave_numb(0,self.ship_id)
     self.scene=1
   end 
 end
@@ -252,15 +353,21 @@ function lg5:scene_bigmap()
   if sid==-1 then
     _Gui_Signal("none","none",scord)
   else
-    _Gui_Signal("unknow",_SignalIdToTag(sid),scord)
+    _Gui_Signal("unknow",_SignalIdToTag(lg5,sid),scord)
   end
   if btnp(4) then
     lg5.scene=2
   end
+  text("press x",50,450,1,20)
 end
 
 function lg5:scene_game()
+  local lscale = 5
+  local lx = 1
+  local ly = 1
+  
   cls(19)
+  --player move
   if btnp(0) then
     _PlayerMove(lg5,0,-1)
     _PlayerRot(lg5,0)
@@ -277,20 +384,23 @@ function lg5:scene_game()
     _PlayerMove(lg5,1,0)
     _PlayerRot(lg5,1)
   end
+  _CameraUpdate(lg5,lscale)
   _MapDraw(lg5,
-    450,--(lg5.pos_ship_map.x*16*6),
-    50,--(lg5.pos_ship_map.y*16*6),
-    true,6)
-  _MapDrawPlayer(lg5,450,50,6,lg5.rot_ship_map)
+    lx+lg5.camera.x,--(lg5.ship_pos.x*16*6),
+    ly+lg5.camera.y,--(lg5.ship_pos.y*16*6),
+    true,lscale)
+  _EnnemyDraw(lg5,lx+lg5.camera.x,ly+lg5.camera.y,lscale)
+  _MapDrawPlayer(lg5,lx+lg5.camera.x,ly+lg5.camera.y,lscale,lg5.ship_rot)
 end
 
-lg5.id_ship=rsave_numb(0)
+lg5.ship_id=rsave_numb(0)
 _MapInit(lg5,15,20)
---_Rdm_Player_Pos(lg5)
+_Rdm_Player_Pos(lg5)
 _Rdm_Signal_Pos(lg5,"low",10,13)
 _Rdm_Signal_Pos(lg5,"tutorial",4,6)
 _Rdm_Signal_Pos(lg5,"midd",15,16)
 _Rdm_Signal_Pos(lg5,"hight",17,19)
+--_NewEnemy(lg5,lg5.enemies_spr.tuto1,1,1)
 
 function EGBA()
   if lg5.scene==0 then
